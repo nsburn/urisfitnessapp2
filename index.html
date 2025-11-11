@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AthleteForge - Workout App</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .5; }
+    }
+    .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Lucide Icons as SVG components
+    const Zap = () => {
+      return (
+        <svg className="w-20 h-20 mx-auto mb-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      );
+    };
+
+    const Play = ({ className = "w-5 h-5" }) => {
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    };
+
+    const Pause = ({ className = "w-5 h-5" }) => {
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    };
+
+    const TrendingUp = ({ className = "w-6 h-6" }) => {
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      );
+    };
+
+    const Clock = ({ className = "w-6 h-6" }) => {
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    };
+
+    const Target = ({ className = "w-6 h-6" }) => {
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    };
+
+    const Plus = ({ className = "w-5 h-5" }) => {
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      );
+    };
+
+    const Music = ({ className = "w-6 h-6" }) => {
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+        </svg>
+      );
+    };
+
+    const Bell = ({ className = "w-5 h-5" }) => {
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      );
+    };
+
+    // Exercise Database
+    const EXERCISES = {
+      footwork: [
+        { id: 'high-knees', name: 'High Knees', description: 'Run in place, bringing knees to hip level', beginner: 20, intermediate: 30, advanced: 45, focus: 'speed' },
+        { id: 'butt-kicks', name: 'Butt Kicks', description: 'Run in place, kicking heels to glutes', beginner: 20, intermediate: 30, advanced: 45, focus: 'speed' },
+        { id: 'lateral-shuffles', name: 'Lateral Shuffles', description: 'Quick side-to-side movements, stay low', beginner: 20, intermediate: 30, advanced: 40, focus: 'agility' },
+        { id: 'carioca', name: 'Carioca Drill', description: 'Crossover running side to side', beginner: 15, intermediate: 25, advanced: 35, focus: 'agility' },
+        { id: 'quick-feet', name: 'Quick Feet', description: 'Rapid small steps in place', beginner: 15, intermediate: 25, advanced: 40, focus: 'speed' },
+      ],
+      strength: [
+        { id: 'push-ups', name: 'Push-Ups', description: 'Hands shoulder-width, lower chest to ground', beginner: 10, intermediate: 20, advanced: 30, focus: 'upper' },
+        { id: 'squats', name: 'Squats', description: 'Feet shoulder-width, lower hips to knee level', beginner: 15, intermediate: 25, advanced: 40, focus: 'lower' },
+        { id: 'lunges', name: 'Lunges', description: 'Step forward, lower back knee to ground', beginner: 10, intermediate: 15, advanced: 20, focus: 'lower' },
+        { id: 'plank', name: 'Plank Hold', description: 'Forearms on ground, body straight', beginner: 20, intermediate: 40, advanced: 60, focus: 'core' },
+        { id: 'mountain-climbers', name: 'Mountain Climbers', description: 'Plank position, alternate knees to chest', beginner: 15, intermediate: 25, advanced: 40, focus: 'core' },
+        { id: 'burpees', name: 'Burpees', description: 'Squat, kick back to plank, return and jump', beginner: 8, intermediate: 12, advanced: 20, focus: 'full-body' },
+      ],
+      explosive: [
+        { id: 'jump-squats', name: 'Jump Squats', description: 'Squat then explode upward', beginner: 10, intermediate: 15, advanced: 25, focus: 'power' },
+        { id: 'box-jumps', name: 'Step-Up Jumps', description: 'Jump onto elevated surface', beginner: 8, intermediate: 12, advanced: 20, focus: 'power' },
+        { id: 'broad-jumps', name: 'Broad Jumps', description: 'Jump forward for distance', beginner: 8, intermediate: 12, advanced: 15, focus: 'power' },
+        { id: 'tuck-jumps', name: 'Tuck Jumps', description: 'Jump high, bring knees to chest', beginner: 8, intermediate: 12, advanced: 18, focus: 'power' },
+      ]
+    };
+
+    const App = () => {
+      const [screen, setScreen] = useState('welcome');
+      const [onboardingStep, setOnboardingStep] = useState(0);
+      const [userData, setUserData] = useState({
+        name: '',
+        fitnessLevel: '',
+        goals: [],
+        preferredExercises: [],
+        schedule: []
+      });
+      const [workouts, setWorkouts] = useState([]);
+      const [currentWorkout, setCurrentWorkout] = useState(null);
+      const [exerciseIndex, setExerciseIndex] = useState(0);
+      const [isPlaying, setIsPlaying] = useState(false);
+      const [timeRemaining, setTimeRemaining] = useState(0);
+      const [completedWorkouts, setCompletedWorkouts] = useState([]);
+      const [musicPlaying, setMusicPlaying] = useState(true);
+      const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+      // Timer logic
+      useEffect(() => {
+        let interval;
+        if (isPlaying && timeRemaining > 0) {
+          interval = setInterval(() => {
+            setTimeRemaining(prev => {
+              if (prev <= 1) {
+                setIsPlaying(false);
+                if (exerciseIndex < currentWorkout.exercises.length - 1) {
+                  setExerciseIndex(prev => prev + 1);
+                  return currentWorkout.exercises[exerciseIndex + 1].duration;
+                } else {
+                  handleWorkoutComplete();
+                  return 0;
+                }
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        }
+        return () => clearInterval(interval);
+      }, [isPlaying, timeRemaining, exerciseIndex, currentWorkout]);
+
+      const handleWorkoutComplete = () => {
+        setCompletedWorkouts([...completedWorkouts, { ...currentWorkout, date: new Date().toISOString() }]);
+        setScreen('dashboard');
+        setCurrentWorkout(null);
+      };
+
+      const generateWorkout = (level, goals) => {
+        const allExercises = [...EXERCISES.footwork, ...EXERCISES.strength, ...EXERCISES.explosive];
+        let selectedExercises = [];
+        
+        if (goals.includes('speed')) {
+          selectedExercises.push(...EXERCISES.footwork.slice(0, 3));
+        }
+        if (goals.includes('strength')) {
+          selectedExercises.push(...EXERCISES.strength.slice(0, 3));
+        }
+        if (goals.includes('power')) {
+          selectedExercises.push(...EXERCISES.explosive.slice(0, 2));
+        }
+        
+        if (selectedExercises.length === 0) {
+          selectedExercises = allExercises.slice(0, 6);
+        }
+
+        return selectedExercises.map(ex => ({
+          ...ex,
+          reps: ex[level],
+          duration: level === 'beginner' ? 30 : level === 'intermediate' ? 45 : 60
+        }));
+      };
+
+      const startOnboarding = () => {
+        setScreen('onboarding');
+        setOnboardingStep(0);
+      };
+
+      const completeOnboarding = () => {
+        const generatedWorkout = {
+          id: Date.now(),
+          name: 'Custom Routine',
+          exercises: generateWorkout(userData.fitnessLevel, userData.goals),
+          duration: 15
+        };
+        setWorkouts([generatedWorkout]);
+        setScreen('dashboard');
+      };
+
+      const startWorkout = (workout) => {
+        setCurrentWorkout(workout);
+        setExerciseIndex(0);
+        setTimeRemaining(workout.exercises[0].duration);
+        setScreen('workout');
+      };
+
+      // Welcome Screen
+      if (screen === 'welcome') {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
+            <div className="text-center text-white">
+              <Zap />
+              <h1 className="text-6xl font-bold mb-4">AthleteForge</h1>
+              <p className="text-xl mb-8">15-Min Workouts for Elite Athletes</p>
+              <button 
+                onClick={startOnboarding}
+                className="bg-white text-purple-600 px-8 py-4 rounded-full text-xl font-bold hover:bg-gray-100 transition"
+              >
+                Get Started
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Onboarding
+      if (screen === 'onboarding') {
+        const steps = [
+          {
+            title: "What's your name?",
+            content: (
+              <input
+                type="text"
+                value={userData.name}
+                onChange={(e) => setUserData({...userData, name: e.target.value})}
+                className="w-full p-4 text-xl rounded-lg border-2 border-purple-300 focus:border-purple-500 outline-none"
+                placeholder="Enter your name"
+              />
+            )
+          },
+          {
+            title: "What's your fitness level?",
+            content: (
+              <div className="space-y-3">
+                {['beginner', 'intermediate', 'advanced'].map(level => (
+                  <button
+                    key={level}
+                    onClick={() => setUserData({...userData, fitnessLevel: level})}
+                    className={`w-full p-4 rounded-lg text-lg font-semibold transition ${
+                      userData.fitnessLevel === level 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {level.charAt(0).toUpperCase() + level.slice(1)}
+                  </button>
+                ))}
+              </div>
+            )
+          },
+          {
+            title: "What are your goals?",
+            content: (
+              <div className="space-y-3">
+                {[
+                  { id: 'speed', label: 'Speed & Footwork', icon: '⚡' },
+                  { id: 'strength', label: 'Strength Training', icon: '💪' },
+                  { id: 'power', label: 'Explosive Power', icon: '🚀' },
+                  { id: 'endurance', label: 'Endurance', icon: '🏃' }
+                ].map(goal => (
+                  <button
+                    key={goal.id}
+                    onClick={() => {
+                      const goals = userData.goals.includes(goal.id)
+                        ? userData.goals.filter(g => g !== goal.id)
+                        : [...userData.goals, goal.id];
+                      setUserData({...userData, goals});
+                    }}
+                    className={`w-full p-4 rounded-lg text-lg font-semibold transition ${
+                      userData.goals.includes(goal.id)
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span className="mr-2">{goal.icon}</span>
+                    {goal.label}
+                  </button>
+                ))}
+              </div>
+            )
+          }
+        ];
+
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+              <div className="mb-6">
+                <div className="flex justify-between mb-2">
+                  {steps.map((_, i) => (
+                    <div key={i} className={`h-2 flex-1 mx-1 rounded ${i <= onboardingStep ? 'bg-purple-600' : 'bg-gray-200'}`} />
+                  ))}
+                </div>
+                <h2 className="text-3xl font-bold text-gray-800 mt-4">{steps[onboardingStep].title}</h2>
+              </div>
+              
+              {steps[onboardingStep].content}
+              
+              <div className="flex gap-3 mt-6">
+                {onboardingStep > 0 && (
+                  <button
+                    onClick={() => setOnboardingStep(prev => prev - 1)}
+                    className="flex-1 py-3 rounded-lg border-2 border-purple-600 text-purple-600 font-semibold hover:bg-purple-50"
+                  >
+                    Back
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    if (onboardingStep < steps.length - 1) {
+                      setOnboardingStep(prev => prev + 1);
+                    } else {
+                      completeOnboarding();
+                    }
+                  }}
+                  className="flex-1 py-3 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700"
+                >
+                  {onboardingStep < steps.length - 1 ? 'Next' : 'Finish'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Dashboard
+      if (screen === 'dashboard') {
+        return (
+          <div className="min-h-screen bg-gray-50">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-500 text-white p-6">
+              <div className="max-w-4xl mx-auto">
+                <h1 className="text-3xl font-bold mb-2">Hey {userData.name}! 👋</h1>
+                <p className="text-purple-100">Ready to crush your workout?</p>
+              </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto p-4">
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <TrendingUp className="text-purple-600 mb-2" />
+                  <div className="text-2xl font-bold">{completedWorkouts.length}</div>
+                  <div className="text-sm text-gray-600">Workouts Done</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <Clock className="text-pink-600 mb-2" />
+                  <div className="text-2xl font-bold">{completedWorkouts.length * 15}</div>
+                  <div className="text-sm text-gray-600">Minutes</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <Target className="text-orange-600 mb-2" />
+                  <div className="text-2xl font-bold">{userData.goals.length}</div>
+                  <div className="text-sm text-gray-600">Goals</div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-3">Your Workouts</h2>
+                {workouts.map(workout => (
+                  <div key={workout.id} className="bg-white p-4 rounded-lg shadow mb-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-bold text-lg">{workout.name}</h3>
+                        <p className="text-sm text-gray-600">{workout.exercises.length} exercises • {workout.duration} min</p>
+                      </div>
+                      <button
+                        onClick={() => startWorkout(workout)}
+                        className="bg-purple-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-purple-700 flex items-center gap-2"
+                      >
+                        <Play />
+                        Start
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setScreen('custom')}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white p-4 rounded-lg font-semibold hover:opacity-90 flex items-center justify-center gap-2"
+              >
+                <Plus />
+                Create Custom Workout
+              </button>
+
+              <div className="mt-6 bg-white p-4 rounded-lg shadow">
+                <h3 className="font-bold mb-3">Settings</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Music className="text-purple-600" />
+                      <span>Background Music</span>
+                    </div>
+                    <button
+                      onClick={() => setMusicPlaying(!musicPlaying)}
+                      className={`w-12 h-6 rounded-full transition ${musicPlaying ? 'bg-purple-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`w-5 h-5 bg-white rounded-full transition-transform ${musicPlaying ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Bell className="text-purple-600" />
+                      <span>Notifications</span>
+                    </div>
+                    <button
+                      onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                      className={`w-12 h-6 rounded-full transition ${notificationsEnabled ? 'bg-purple-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`w-5 h-5 bg-white rounded-full transition-transform ${notificationsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Custom Workout Builder
+      if (screen === 'custom') {
+        const [selectedExercises, setSelectedExercises] = useState([]);
+        const allExercises = [...EXERCISES.footwork, ...EXERCISES.strength, ...EXERCISES.explosive];
+
+        return (
+          <div className="min-h-screen bg-gray-50">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-500 text-white p-6">
+              <div className="max-w-4xl mx-auto flex justify-between items-center">
+                <h1 className="text-3xl font-bold">Build Your Workout</h1>
+                <button onClick={() => setScreen('dashboard')} className="text-white text-2xl">✕</button>
+              </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto p-4">
+              <div className="mb-4 bg-white p-4 rounded-lg shadow">
+                <div className="text-sm text-gray-600">Selected: {selectedExercises.length} exercises</div>
+                <div className="text-sm text-gray-600">Duration: ~{selectedExercises.length * 2} minutes</div>
+              </div>
+
+              <div className="space-y-4">
+                {allExercises.map(exercise => (
+                  <div key={exercise.id} className="bg-white p-4 rounded-lg shadow">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{exercise.name}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{exercise.description}</p>
+                        <div className="text-sm">
+                          <span className="font-semibold">Reps: </span>
+                          {exercise[userData.fitnessLevel]} • 
+                          <span className="ml-2 text-purple-600 font-semibold">{exercise.focus}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (selectedExercises.find(e => e.id === exercise.id)) {
+                            setSelectedExercises(selectedExercises.filter(e => e.id !== exercise.id));
+                          } else {
+                            setSelectedExercises([...selectedExercises, {
+                              ...exercise,
+                              reps: exercise[userData.fitnessLevel],
+                              duration: 45
+                            }]);
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-lg font-semibold transition ${
+                          selectedExercises.find(e => e.id === exercise.id)
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        {selectedExercises.find(e => e.id === exercise.id) ? 'Added' : 'Add'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {selectedExercises.length > 0 && (
+                <button
+                  onClick={() => {
+                    const newWorkout = {
+                      id: Date.now(),
+                      name: 'Custom Workout',
+                      exercises: selectedExercises,
+                      duration: 15
+                    };
+                    setWorkouts([...workouts, newWorkout]);
+                    setScreen('dashboard');
+                  }}
+                  className="fixed bottom-4 right-4 bg-purple-600 text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-purple-700"
+                >
+                  Save Workout
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // Workout Screen
+      if (screen === 'workout' && currentWorkout) {
+        const currentExercise = currentWorkout.exercises[exerciseIndex];
+
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-purple-600 to-pink-500 text-white flex flex-col">
+            <div className="p-4 flex justify-between items-center">
+              <button onClick={() => setScreen('dashboard')} className="text-white text-2xl">✕</button>
+              <div className="text-center">
+                <div className="text-sm opacity-75">Exercise {exerciseIndex + 1} of {currentWorkout.exercises.length}</div>
+              </div>
+              {musicPlaying && <Music className="animate-pulse" />}
+            </div>
+
+            <div className="flex-1 flex flex-col items-center justify-center p-8">
+              <div className="text-8xl font-bold mb-8">{timeRemaining}</div>
+              
+              <h2 className="text-4xl font-bold mb-4">{currentExercise.name}</h2>
+              <p className="text-xl mb-2 opacity-90">{currentExercise.description}</p>
+              <div className="text-2xl font-bold mb-8">{currentExercise.reps} reps</div>
+
+              <div className="bg-white/20 p-6 rounded-lg mb-8">
+                <h3 className="font-bold mb-2">Form Check ✓</h3>
+                <p className="text-sm opacity-90">Keep your core tight and movements controlled</p>
+              </div>
+
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="bg-white text-purple-600 px-12 py-6 rounded-full text-xl font-bold hover:bg-gray-100 transition flex items-center gap-3"
+              >
+                {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
+                {isPlaying ? 'Pause' : 'Start'}
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="bg-white/20 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-white h-full transition-all"
+                  style={{ width: `${((exerciseIndex + 1) / currentWorkout.exercises.length) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return null;
+    };
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
